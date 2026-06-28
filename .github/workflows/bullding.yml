@@ -1,0 +1,58 @@
+name: Build Flutter Android APK
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build_android:
+    name: Build Flutter Android APK
+    runs-on: ubuntu-latest
+
+    # 🎯 تنظیم حیاتی: تمام دستورات run درون پوشه agent اجرا می‌شوند
+    defaults:
+      run:
+        working-directory: agent 
+
+    steps:
+      # ۱. دریافت کدها (این مرحله همیشه در ریشه ریپازیتوری اجرا می‌شود)
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # ۲. تنظیم Java
+      - name: ☕ Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ۳. تنظیم فلاتر
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # ۴. بررسی نسخه (اجرا در پوشه agent)
+      - name: 📋 Show Flutter version
+        run: flutter --version
+
+      # ۵. دریافت وابستگی‌ها (اجرا در پوشه agent - خطای قبلی اینجا رفع می‌شود)
+      - name: 📦 Get dependencies
+        run: flutter pub get
+
+      # ۶. ساخت APK (اجرا در پوشه agent)
+      - name: 🏗️ Build Release APK
+        run: flutter build apk --release
+
+      # ۷. آپلود فایل خروجی
+      - name: 📤 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qunzo-Release-APK
+          # ⚠️ اکشن‌های ثالث مسیر را از ریشه ریپازیتوری می‌سنجند، نه working-directory
+          path: agent/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
